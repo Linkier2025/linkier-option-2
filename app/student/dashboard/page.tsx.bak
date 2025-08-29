@@ -1,0 +1,1779 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { AnimatedTabs, AnimatedTabsList, AnimatedTabsTrigger, AnimatedTabsContent } from "@/components/ui/animated-tabs"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Separator } from "@/components/ui/separator"
+import { 
+  MoreVertical, Star, Search, Filter, Heart, Clock, Check, X, AlertCircle, LogOut, Home, User, 
+  DollarSign, Bell, Settings, MessageSquare, Users, FileText, Calendar, MapPin, Bed, Bath, 
+  Ruler, Wifi, Utensils, Droplets, Dumbbell, Wind, Sun, Snowflake, 
+  Volume2, VolumeX, Pencil, Trash2, Plus, Shuffle
+} from "lucide-react"
+import NotificationCenter from "@/components/notification-center"
+import MoreMenu from "@/components/more-menu"
+import ReviewSystem from "@/components/review-system"
+import { 
+  Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, 
+  DialogHeader, DialogTitle, DialogTrigger 
+} from "@/components/ui/dialog"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { 
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Link from "next/link"
+import AuthButton from "@/components/auth-button"
+import { RentalRequestDialog } from "@/components/RentalRequestDialog"
+
+// Types for Complaints feature
+type ComplaintStatus = "Submitted" | "In Progress" | "Resolved"
+type ComplaintPriority = "Low" | "Medium" | "High" | "Urgent"
+type ComplaintUpdate = { date: string; message: string; status: ComplaintStatus }
+type Complaint = {
+  id: number
+  title: string
+  status: ComplaintStatus
+  date: string
+  priority: ComplaintPriority
+  description: string
+  updates: ComplaintUpdate[]
+}
+
+// Initialize with empty arrays for real data
+const [complaints, setComplaints] = useState<Complaint[]>([])
+const [properties, setProperties] = useState<any[]>([])
+
+// Function to fetch complaints from Supabase
+const fetchComplaints = async () => {
+  const supabaseClient = createClientComponentClient()
+  const { data, error } = await supabaseClient
+    .from('complaints')
+    .select('*')
+  if (error) {
+    console.error(error)
+  } else {
+    setComplaints(data)
+  }
+}
+
+// Function to fetch properties from Supabase
+const fetchProperties = async () => {
+  const supabaseClient = createClientComponentClient()
+  const { data, error } = await supabaseClient
+    .from('properties')
+    .select('*')
+  if (error) {
+    console.error(error)
+  } else {
+    setProperties(data)
+  }
+}
+
+// Fetch data on component mount
+useEffect(() => {
+  fetchComplaints()
+  fetchProperties()
+}, [])
+
+// Initialize with empty array for real data
+const mockComplaints: Complaint[] = []
+    title: "Leaking Roof",
+    status: "In Progress",
+    date: "2024-08-20",
+    priority: "High",
+    description: "The roof in my room is leaking when it rains, causing water damage to my belongings.",
+    updates: [
+      {
+        date: "2024-08-21",
+        message: "Maintenance team has been notified and will inspect the issue tomorrow.",
+        status: "In Progress",
+      }
+    ]
+  },
+  {
+    id: 2,
+    title: "Broken Air Conditioning",
+    status: "Resolved",
+    date: "2024-08-15",
+    priority: "Medium",
+    description: "The AC unit in my room is not cooling properly.",
+    updates: [
+      {
+        date: "2024-08-16",
+        message: "Technician has fixed the AC unit.",
+        status: "Resolved",
+      }
+    ]
+  }
+];
+
+// Initialize with empty array for real data
+const mockProperties: any[] = []
+    title: "Comfortable Home for Girls in Mt Pleasant",
+    location: "Mt Pleasant, Harare",
+    distanceFromUniversity: "0.5km from University of Zimbabwe (3 minutes walk)",
+    university: "University of Zimbabwe",
+    gender: "Girls Only",
+    contactPhone: "+263 77 123 4567",
+    roomTypes: [
+      { type: "Single Room with En-suite", price: 4500, available: 2 },
+      { type: "Shared Room", price: 3200, available: 1 },
+    ],
+    amenities: [
+      "wifi",
+      "gas-stove",
+      "fridge",
+      "freezer",
+      "solar",
+      "borehole-water",
+      "security",
+      "parking",
+      "tiles",
+      "ceiling",
+      "kitchen",
+      "laundry",
+      "garden",
+      "balcony",
+      "aircon",
+      "study-room",
+    ],
+    rules:
+      "Curfew time: 10:00 PM on weekdays, 11:00 PM on weekends. No male visitors after 8:00 PM. Visitors must be registered at reception. No smoking anywhere on the property. Keep common areas clean and tidy. Respect quiet hours from 9:00 PM to 7:00 AM. No loud music or parties. No pets allowed.",
+    description:
+      "Beautiful modern boarding house exclusively for female students in the heart of Mt Pleasant. Located just 3 minutes walk from University of Zimbabwe campus with easy access to public transport. Features modern furnishings, high-speed WiFi, fully equipped kitchen with gas stove, and reliable solar power system with backup generator.",
+    rating: 4.5,
+    reviews: 12,
+    landlord: "Mrs. Sarah Mukamuri",
+    images: ["/modern-apartment-living.png"],
+    isFavorite: true,
+    rent: 4500,
+    rooms: 2,
+  },
+  {
+    id: 2,
+    title: "Modern Student Lodge in Avondale",
+    location: "Avondale, Harare",
+    distanceFromUniversity: "1.2km from University of Zimbabwe (8 minutes walk, 3 minutes drive)",
+    university: "University of Zimbabwe",
+    gender: "Mixed",
+    contactPhone: "+263 77 987 6543",
+    roomTypes: [
+      { type: "Single Room", price: 3800, available: 3 },
+      { type: "Double Room", price: 2800, available: 2 },
+      { type: "Triple Room", price: 2200, available: 1 },
+    ],
+    amenities: [
+      "wifi",
+      "gas-stove",
+      "fridge",
+      "freezer",
+      "solar",
+      "borehole-water",
+      "security",
+      "parking",
+      "tiles",
+      "ceiling",
+      "kitchen",
+      "laundry",
+      "garden",
+      "study-room",
+      "common-room",
+    ],
+    rules:
+      "Curfew time: 11:00 PM daily. Visitors allowed until 9:00 PM with proper registration. No smoking indoors (designated outdoor smoking area available). Keep common areas clean after use. Respect quiet hours from 10:00 PM to 6:00 AM. No loud music or parties without prior permission. Maximum 2 visitors per resident at a time.",
+    description:
+      "Contemporary student accommodation in the prestigious Avondale area. Features spacious rooms with modern amenities, reliable solar power with borehole water supply, and excellent security. Perfect for students who value comfort and convenience with easy access to campus and city center.",
+    rating: 4.2,
+    reviews: 18,
+    landlord: "Mr. James Chikwanha",
+    images: ["/cozy-studio.png"],
+    isFavorite: false,
+    rent: 3800,
+    rooms: 3,
+  },
+  {
+    id: 3,
+    title: "Spacious Boys Boarding House in Marlborough",
+    location: "Marlborough, Harare",
+    distanceFromUniversity: "2.1km from University of Zimbabwe (15 minutes walk, 5 minutes drive)",
+    university: "University of Zimbabwe",
+    gender: "Boys Only",
+    contactPhone: "+263 77 456 7890",
+    roomTypes: [
+      { type: "Single Room", price: 3500, available: 4 },
+      { type: "Shared Room (2 people)", price: 2900, available: 3 },
+      { type: "Shared Room (3 people)", price: 2400, available: 2 },
+    ],
+    amenities: [
+      "wifi",
+      "gas-stove",
+      "fridge",
+      "freezer",
+      "solar",
+      "borehole-water",
+      "security",
+      "parking",
+      "tiles",
+      "ceiling",
+      "kitchen",
+      "laundry",
+      "garden",
+      "braai-area",
+      "study-room",
+      "gym",
+    ],
+    rules:
+      "Curfew time: 11:30 PM on weekdays, 12:00 AM on weekends. No female visitors after 9:00 PM. All visitors must be registered and accompanied by resident. No smoking indoors. Keep common areas clean and organized. Respect quiet hours from 10:00 PM to 6:00 AM. Gym hours: 6:00 AM to 10:00 PM daily.",
+    description:
+      "Large boarding house designed specifically for male students with excellent facilities including a fully equipped gym and braai area. Features spacious rooms, reliable utilities with solar power and borehole water, and ample parking space. Perfect for students who enjoy an active lifestyle and community atmosphere.",
+    rating: 4.7,
+    reviews: 25,
+    landlord: "Mr. Tendai Moyo",
+    images: ["/spacious-boarding-house.png"],
+    isFavorite: false,
+    rent: 3500,
+    rooms: 4,
+  },
+  {
+    id: 4,
+    title: "Budget-Friendly Student Accommodation in Eastlea",
+    location: "Eastlea, Harare",
+    distanceFromUniversity: "1.8km from University of Zimbabwe (12 minutes walk, 4 minutes drive)",
+    university: "University of Zimbabwe",
+    gender: "Mixed",
+    contactPhone: "+263 77 234 5678",
+    roomTypes: [
+      { type: "Shared Room (2 people)", price: 2500, available: 6 },
+      { type: "Shared Room (3 people)", price: 2000, available: 4 },
+      { type: "Single Room", price: 3000, available: 2 },
+    ],
+    amenities: [
+      "wifi",
+      "gas-stove",
+      "fridge",
+      "solar",
+      "borehole-water",
+      "security",
+      "tiles",
+      "ceiling",
+      "kitchen",
+      "laundry",
+      "study-room",
+      "common-room",
+    ],
+    rules:
+      "Curfew time: 10:30 PM daily. Visitors allowed until 8:00 PM with proper registration. No smoking anywhere on the property. Keep common areas tidy and clean after use. Respect quiet hours from 9:30 PM to 6:30 AM. No overnight guests without prior permission from management. Maximum 1 visitor per resident at a time.",
+    description:
+      "Affordable boarding house perfect for budget-conscious students without compromising on essential amenities. Clean and well-maintained with reliable solar power and borehole water supply. Great community atmosphere with dedicated study areas and common rooms for socializing and group studies.",
+    rating: 4.0,
+    reviews: 14,
+    landlord: "Mrs. Grace Nyamande",
+    images: ["/modern-apartment-living.png"],
+    isFavorite: false,
+    rent: 2500,
+    rooms: 6,
+  },
+  {
+    id: 5,
+    title: "Premium Student Residence in Borrowdale",
+    location: "Borrowdale, Harare",
+    distanceFromUniversity: "3.2km from University of Zimbabwe (20 minutes walk, 8 minutes drive)",
+    university: "University of Zimbabwe",
+    gender: "Mixed",
+    contactPhone: "+263 77 345 6789",
+    roomTypes: [
+      { type: "Single Room with En-suite", price: 5200, available: 3 },
+      { type: "Master Suite with Kitchenette", price: 6000, available: 2 },
+      { type: "Studio Apartment", price: 6500, available: 1 },
+    ],
+    amenities: [
+      "wifi",
+      "gas-stove",
+      "fridge",
+      "freezer",
+      "solar",
+      "borehole-water",
+      "security",
+      "parking",
+      "tiles",
+      "ceiling",
+      "kitchen",
+      "laundry",
+      "garden",
+      "balcony",
+      "aircon",
+      "pool",
+      "gym",
+      "study-room",
+      "conference-room",
+    ],
+    rules:
+      "Curfew time: 12:00 AM daily. Visitors allowed until 10:00 PM with proper registration. No smoking indoors (designated outdoor areas available). Pool and gym hours: 6:00 AM to 10:00 PM daily. Keep all facilities clean and report any damages immediately. Respect quiet hours from 10:00 PM to 7:00 AM. Conference room bookings required in advance.",
+    description:
+      "Luxury boarding house with premium amenities including swimming pool, fully equipped gym, and conference facilities. Located in the upscale Borrowdale area with top-notch security and modern furnishings. Solar power system with backup generator and borehole water ensure uninterrupted utilities. Perfect for students who want the ultimate accommodation experience.",
+    rating: 4.8,
+    reviews: 32,
+    landlord: "Dr. Patricia Madziva",
+    images: ["/spacious-boarding-house.png"],
+    isFavorite: true,
+    rent: 5200,
+    rooms: 3,
+  },
+  {
+    id: 6,
+    title: "Cozy Girls Lodge in Newlands",
+    location: "Newlands, Harare",
+    distanceFromUniversity: "1.5km from University of Zimbabwe (10 minutes walk, 3 minutes drive)",
+    university: "University of Zimbabwe",
+    gender: "Girls Only",
+    contactPhone: "+263 77 567 8901",
+    roomTypes: [
+      { type: "Single Room", price: 3600, available: 4 },
+      { type: "Shared Room (2 people)", price: 2700, available: 3 },
+    ],
+    amenities: [
+      "wifi",
+      "gas-stove",
+      "fridge",
+      "freezer",
+      "solar",
+      "borehole-water",
+      "security",
+      "parking",
+      "tiles",
+      "ceiling",
+      "kitchen",
+      "laundry",
+      "garden",
+      "study-room",
+      "common-room",
+      "balcony",
+    ],
+    rules:
+      "Curfew time: 10:00 PM on weekdays, 10:30 PM on weekends. No male visitors after 7:00 PM. All visitors must be registered at reception and accompanied at all times. No smoking anywhere on the property. Keep common areas clean and organized. Respect quiet hours from 9:00 PM to 7:00 AM. No loud music or parties.",
+    description:
+      "Safe and comfortable boarding house designed exclusively for female students in the quiet Newlands suburb. Features beautiful garden spaces, reliable utilities with solar power and borehole water, and excellent security with 24/7 monitoring. Perfect for students who value safety, tranquility, and a supportive community environment.",
+    rating: 4.3,
+    reviews: 16,
+    landlord: "Mrs. Chipo Mutasa",
+    images: ["/modern-apartment-living.png"],
+    isFavorite: false,
+    rent: 3600,
+
+const mockRentHistory: any[] = []
+
+const mockStudentNotifications = []
+
+const mockPropertyReviews = []
+
+const mockLandlordReviews = []
+
+interface Roommate {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  university: string;
+  yearOfStudy: string;
+  profileImage: string;
+  moveInDate: string;
+  compatibility: number;
+  preferences: {
+    studyHours: string;
+    sleepSchedule: string;
+    cleanliness: string;
+    socialLevel: string;
+    musicPreference: string;
+    guestPolicy: string;
+  };
+  rating: number;
+  isCompatible: boolean;
+  bio?: string;
+  course?: string;
+  avatar?: string;
+  roomNumber?: string;
+}
+
+// Initialize with empty array for real data
+const mockRoommates: Roommate[] = []
+
+type RoommateRequest = {
+  id: number;
+  type: 'room_change' | 'roommate_change';
+  studentName: string;
+  currentRoom: string;
+  reason: string;
+  date: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedRoom?: string;
+  currentRoommate?: string;
+  requestedRoommate?: string;
+};
+
+// Initialize with empty array for real data
+const mockRoommateRequests: RoommateRequest[] = []
+
+// ...
+
+useEffect(() => {
+  const loadProfile = async () => {
+    setProfileLoading(true)
+    setProfileError(null)
+    try {
+      // Get current user
+      const { data: { user }, error: userErr } = await supabase.auth.getUser()
+      if (userErr) throw userErr
+      if (!user) return
+
+      // Get profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) throw profileError
+
+      const profile: StudentProfile = {
+        id: profileData.id,
+        first_name: profileData.first_name ?? null,
+        surname: profileData.surname ?? null,
+        email: profileData.email ?? user.email ?? null,
+        phone: profileData.phone ?? null,
+        avatar_url: profileData.avatar_url ?? null,
+        created_at: profileData.created_at,
+        updated_at: profileData.updated_at,
+      }
+      setStudentProfile(profile)
+
+      // Get current tenancy
+      const { data: tenancyData, error: tenancyError } = await supabase
+        .from('tenancies')
+        .select(`
+          *,
+          property:properties(*),
+          room:room_allocations(room:rooms(*))
+        `)
+        .eq('student_id', user.id)
+        .eq('status', 'active')
+        .single()
+
+      if (!tenancyError && tenancyData) {
+        // Update properties with current accommodation
+        if (tenancyData.property) {
+          setProperties([{
+            id: tenancyData.property.id,
+            title: tenancyData.property.title,
+            location: tenancyData.property.location,
+            distanceFromUniversity: `${tenancyData.property.distance_to_university || '0.5'}km from ${tenancyData.property.university || 'university'}`,
+            rent: tenancyData.monthly_rent,
+            images: tenancyData.property.images || [],
+            amenities: tenancyData.property.amenities || [],
+            roomNumber: tenancyData.room?.[0]?.room?.room_number || 'N/A',
+            roomType: tenancyData.room?.[0]?.room?.room_type || 'N/A'
+          }])
+        }
+
+        // Fetch rent payment history
+        const { data: paymentsData, error: paymentsError } = await supabase
+          .from('rent_payments')
+          .select('*')
+          .eq('tenancy_id', tenancyData.id)
+          .order('payment_date', { ascending: false })
+
+        if (!paymentsError && paymentsData) {
+          // Update rent history state if needed
+          setRentHistory(paymentsData.map(payment => ({
+            month: new Date(payment.payment_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+            amount: payment.amount,
+            status: payment.status,
+            date: payment.payment_date
+          })))
+        }
+      }
+
+      // Fetch roommates
+      const { data: roommatesData, error: roommatesError } = await supabase
+        .from('roommate_relationships')
+        .select(`
+          id,
+          status,
+          roommate:profiles!roommate_relationships_roommate_id_fkey(
+            id,
+            first_name,
+            surname,
+            email,
+            phone,
+            avatar_url,
+            room_allocations(room:rooms(room_number, room_type))
+          )
+        `)
+        .or(`student_id.eq.${user.id},roommate_id.eq.${user.id}`)
+        .eq('status', 'accepted')
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      // Force a full page reload to ensure clean state
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Error signing out:', error)
+      // Still redirect even if there's an error
+      window.location.href = '/'
+    }
+  }
+
+  // Form state
+  // Available options for dropdowns
+  const universities = [
+    "University of Zimbabwe",
+    "National University of Science and Technology (NUST)",
+    "Zimbabwe Open University (ZOU)",
+    "Chinhoyi University of Technology (CUT)",
+    "Midlands State University (MSU)",
+    "Lupane State University (LSU)",
+    "Great Zimbabwe University (GZU)",
+    "Harare Institute of Technology (HIT)",
+    "Bindura University of Science Education (BUSE)",
+    "Other"
+  ];
+
+  const yearOfStudyOptions = [
+    "1st Year",
+    "2nd Year",
+    "3rd Year",
+    "4th Year",
+    "5th Year",
+    "Postgraduate",
+    "Other"
+  ];
+
+  const [formData, setFormData] = useState({
+    phoneNumber: "+263 77 123 4567",
+    alternateEmail: "alex.personal@example.com",
+    homeAddress: "123 Main St, Harare",
+    studentId: "STU2023001",
+    faculty: "Science and Technology",
+    program: "Computer Science",
+    expectedGraduation: "2025",
+    university: "University of Zimbabwe",
+    yearOfStudy: "3rd Year",
+    emergencyContact: {
+      name: "John Doe",
+      relationship: "Parent",
+      phone: "+263 77 765 4321"
+    }
+  })
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+  
+  const handleEmergencyContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      emergencyContact: {
+        ...prev.emergencyContact,
+        [name]: value
+      }
+    }))
+  }
+  
+  const handleSaveChanges = async () => {
+    setIsSaving(true)
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setIsEditing(false)
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 3000)
+    } catch (error) {
+      console.error('Failed to save changes:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteAccount = () => {
+    // In a real app, this would make an API call to delete the account
+    console.log('Account deletion requested')
+    // Redirect to home page after deletion
+    window.location.href = '/'
+  }
+
+  // studentProfile fields like university/yearOfStudy are managed in formData, not profiles
+
+  const handleRoommateRequest = (
+    type: 'room_change' | 'roommate_change',
+    reason: string,
+    requestedRoom?: string,
+    currentRoommate?: string,
+    requestedRoommate?: string
+  ) => {
+    const baseRequest: Omit<RoommateRequest, 'id'> = {
+      type,
+      studentName: `${studentProfile?.first_name ?? ''} ${studentProfile?.surname ?? ''}`.trim() || 'Student',
+      currentRoom: "Room 101",
+      reason,
+      date: new Date().toISOString().split('T')[0],
+      status: 'pending',
+    };
+
+    let newRequest: RoommateRequest;
+    
+    if (type === 'room_change') {
+      newRequest = {
+        ...baseRequest,
+        id: Date.now(),
+        requestedRoom: requestedRoom || '',
+      };
+    } else {
+      newRequest = {
+        ...baseRequest,
+        id: Date.now(),
+        currentRoommate: currentRoommate || '',
+        requestedRoommate: requestedRoommate || '',
+      };
+    }
+    
+    setRoommateRequests([newRequest, ...roommateRequests]);
+    alert("Your request has been submitted to the landlord!");
+  }
+
+  const rateRoommate = (roommateId: number, rating: number) => {
+    setRoommates(roommates.map((r) => (r.id === roommateId ? { ...r, rating } : r)))
+    alert("Roommate rating submitted!")
+  }
+
+  const toggleFavorite = (propertyId: number) => {
+    setProperties(
+      properties.map((property) =>
+        property.id === propertyId ? { ...property, isFavorite: !property.isFavorite } : property,
+      ),
+    )
+  }
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(notifications.map((n) => (n.id === id ? { ...n, read: true } : n)))
+  }
+
+  const handleMarkAllAsRead = () => {
+    setNotifications(notifications.map((n) => ({ ...n, read: true })))
+  }
+
+  const handleRequestToRent = (property: any) => {
+    setSelectedProperty({ id: property.id.toString(), title: property.title })
+    setIsRequestDialogOpen(true)
+  }
+
+  const submitRentalRequest = () => {
+    if (!selectedProperty) {
+      console.error('No property selected');
+      return;
+    }
+    
+    // Create new notification for landlord (in real app, would send to backend)
+    const newNotification = {
+      id: Date.now().toString(),
+      type: "rental_request" as const,
+      title: "New Rental Request",
+      message: `${(studentProfile?.first_name ?? '')} ${(studentProfile?.surname ?? '')} wants to rent ${selectedProperty?.title || 'selected property'}`.trim(),
+      time: "Just now",
+      read: false,
+      data: {
+        requestId: Date.now().toString(),
+        studentName: `${(studentProfile?.first_name ?? '')} ${(studentProfile?.surname ?? '')}`.trim(),
+        studentEmail: studentProfile?.email,
+        university: formData.university,
+        yearOfStudy: formData.yearOfStudy,
+        propertyTitle: selectedProperty?.title || '',
+        message: requestMessage,
+      },
+    }
+
+    // In real app, would send this to the landlord's notification system
+    console.log("Rental request sent:", newNotification)
+
+    setShowRequestDialog(false)
+    setRequestMessage("")
+    setSelectedProperty(null)
+
+    // Show success message
+    alert("Your rental request has been sent to the landlord!")
+  }
+
+  const filteredProperties = properties.filter((property) => {
+    const matchesSearch =
+      property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.location.toLowerCase().includes(searchQuery.toLowerCase())
+
+    const matchesPrice =
+      priceRange === "any-price" ||
+      (priceRange === "0-3000" && property.rent <= 3000) ||
+      (priceRange === "3000-5000" && property.rent >= 3000 && property.rent <= 5000) ||
+      (priceRange === "5000+" && property.rent > 5000)
+
+    const matchesLocation = selectedLocation === "any-location" || property.location.includes(selectedLocation)
+
+    return matchesSearch && matchesPrice && matchesLocation
+  })
+
+  const favoriteProperties = properties.filter((property) => property.isFavorite)
+
+  const handleSubmitPropertyReview = (rating: number, comment: string) => {
+    console.log("Property review submitted:", { rating, comment })
+    // In real app, would send to backend
+    alert("Thank you for your review!")
+  }
+
+  const handleSubmitLandlordReview = (rating: number, comment: string) => {
+    console.log("Landlord review submitted:", { rating, comment })
+    // In real app, would send to backend
+    alert("Thank you for your review!")
+  }
+
+  // Submit a new complaint (client-side only)
+  const handleSubmitComplaint = () => {
+    if (!newComplaint.title || !newComplaint.description) return
+
+    const complaint = {
+      id: complaints.length + 1,
+      title: newComplaint.title,
+      status: "Submitted" as const,
+      date: "2025-08-01",
+      priority: newComplaint.priority,
+      description: newComplaint.description,
+      updates: [
+        {
+          date: "2025-08-01",
+          message: "Complaint has been submitted and is under review.",
+          status: "Submitted" as const,
+        },
+      ],
+    }
+
+    setComplaints([complaint, ...complaints])
+    setNewComplaint({ title: "", description: "", priority: "Medium" })
+    setShowNewComplaint(false)
+
+    // Add notification
+    const newNotification = {
+      id: `${Date.now()}`,
+      type: "complaint" as const,
+      title: "Complaint Submitted",
+      message: `Your complaint "${complaint.title}" has been submitted successfully.`,
+      time: "Just now",
+      read: false,
+    }
+    setNotifications([newNotification, ...notifications])
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-lg">L</span>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">Linkier</h1>
+                <p className="text-xs text-muted-foreground">Student Dashboard</p>
+              </div>
+            </Link>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-muted-foreground">Welcome, {studentProfile?.first_name || '...'}</span>
+              <NotificationCenter
+                userType="student"
+                notifications={notifications}
+                onMarkAsRead={handleMarkAsRead}
+                onMarkAllAsRead={handleMarkAllAsRead}
+              />
+              <MoreMenu />
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8">
+        <AnimatedTabs 
+          defaultValue="search" 
+          className="space-y-6"
+          onValueChange={(value) => {
+            const tabs = ["search", "myroom", "rent", "profile", "complaints"]
+            setActiveTabIndex(tabs.indexOf(value))
+          }}
+        >
+          <AnimatedTabsList className="w-full overflow-x-auto no-scrollbar">
+            <div className="flex w-full relative">
+              {["Search", "My Room", "Rent", "Profile", "Complaints"].map((tab, index) => (
+                <AnimatedTabsTrigger 
+                  key={tab} 
+                  value={tab.toLowerCase().replace(' ', '')}
+                  className="flex-1 min-w-max px-4"
+                  activeTabIndex={activeTabIndex}
+                  totalTabs={5}
+                >
+                  {tab}
+                </AnimatedTabsTrigger>
+              ))}
+            </div>
+          </AnimatedTabsList>
+
+          {/* Search Properties Tab */}
+          <AnimatedTabsContent value="search" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Search className="w-5 h-5 mr-2" />
+                  Find Your Perfect Accommodation
+                </CardTitle>
+                <CardDescription>Search and filter properties near your university</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Search Bar */}
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Search by property name or location..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="flex items-center">
+                    <Filter className="w-4 h-4 mr-2" />
+                    Filters
+                  </Button>
+                </div>
+
+                {/* Filters */}
+                {showFilters && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+                    <div>
+                      <Label>Price Range</Label>
+                      <Select value={priceRange} onValueChange={setPriceRange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Any price" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any-price">Any price</SelectItem>
+                          <SelectItem value="0-3000">$0 - $200</SelectItem>
+                          <SelectItem value="3000-5000">$200 - $350</SelectItem>
+                          <SelectItem value="5000+">$350+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Location</Label>
+                      <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Any location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any-location">Any location</SelectItem>
+                          <SelectItem value="Mt Pleasant">Mt Pleasant</SelectItem>
+                          <SelectItem value="Avondale">Avondale</SelectItem>
+                          <SelectItem value="Marlborough">Marlborough</SelectItem>
+                          <SelectItem value="Eastlea">Eastlea</SelectItem>
+                          <SelectItem value="Borrowdale">Borrowdale</SelectItem>
+                          <SelectItem value="Newlands">Newlands</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>University</Label>
+                      <Select disabled value={formData.university}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="University of Zimbabwe" />
+                        </SelectTrigger>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Property Listings */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProperties.map((property) => (
+                <Card key={property.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="relative">
+                    <img
+                      src={property.images[0] || "/placeholder.svg"}
+                      alt={property.title}
+                      className="w-full h-48 object-cover"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                      onClick={() => toggleFavorite(property.id)}
+                    >
+                      <Heart
+                        className={`w-4 h-4 ${property.isFavorite ? "fill-red-500 text-red-500" : "text-gray-600"}`}
+                      />
+                    </Button>
+                  </div>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-lg">{property.title}</h3>
+                      <div className="flex items-center text-muted-foreground text-sm">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        {property.location}
+                      </div>
+                      <div className="text-xs text-primary font-medium">📍 {property.distanceFromUniversity}</div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-primary font-semibold">
+                          <DollarSign className="w-4 h-4 mr-1" />
+                          {property.roomTypes && property.roomTypes.length > 1
+                            ? `R${Math.min(...property.roomTypes.map((r) => r.price))} - R${Math.max(...property.roomTypes.map((r) => r.price))}/month`
+                            : `R${property.rent}/month`}
+                        </div>
+                        <div className="flex items-center text-sm">
+                          <Star className="w-4 h-4 mr-1 fill-yellow-400 text-yellow-400" />
+                          {property.rating} ({property.reviews})
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>
+                          {property.roomTypes
+                            ? `${property.roomTypes.reduce((sum, rt) => sum + rt.available, 0)} rooms available`
+                            : `${property.rooms} rooms`}
+                        </span>
+                        <Badge variant="secondary">{property.gender}</Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {property.amenities.slice(0, 3).map((amenity) => (
+                          <Badge key={amenity} variant="outline" className="text-xs">
+                            {amenity}
+                          </Badge>
+                        ))}
+                        {property.amenities.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{property.amenities.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex space-x-2 mt-4">
+                        <Button variant="outline" className="flex-1 bg-transparent" asChild>
+                          <Link href={`/property/${property.id}`}>View Details</Link>
+                        </Button>
+                        <Button className="flex-1" onClick={() => handleRequestToRent(property)}>
+                          Request to Rent
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </AnimatedTabsContent>
+
+          <AnimatedTabsContent value="myroom" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Room Details Card */}
+              <div className="lg:col-span-2 space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Home className="w-5 h-5 mr-2" />
+                      My Assigned Room
+                    </CardTitle>
+                    <CardDescription>Your current accommodation details</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Room Status */}
+                    <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div>
+                          <p className="font-semibold text-green-800">Room Assigned</p>
+                          <p className="text-sm text-green-600">You are currently assigned to a room</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        Active
+                      </Badge>
+                    </div>
+
+                    {/* Room Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Property</Label>
+                          <p className="text-lg font-semibold">Modern Student Apartment</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Room Number</Label>
+                          <p className="text-lg font-semibold">Room 101</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Room Type</Label>
+                          <p className="text-lg font-semibold">Shared Room (3 Beds)</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Floor</Label>
+                          <p className="text-lg font-semibold">1st Floor</p>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Monthly Rent</Label>
+                          <p className="text-lg font-semibold text-primary">$220</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Move-in Date</Label>
+                          <p className="text-lg font-semibold">September 1, 2024</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Lease End</Label>
+                          <p className="text-lg font-semibold">August 31, 2025</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Occupancy</Label>
+                          <p className="text-lg font-semibold">3/3 (Full Occupancy)</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Room Amenities */}
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground mb-3 block">Room Amenities</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {[
+                          { name: "Shared Bathroom", icon: "🚿" },
+                          { name: "Study Desk", icon: "📚" },
+                          { name: "Wardrobe", icon: "👔" },
+                          { name: "WiFi", icon: "📶" },
+                          { name: "Air Conditioning", icon: "❄️" },
+                          { name: "Window View", icon: "🪟" },
+                        ].map((amenity) => (
+                          <div key={amenity.name} className="flex items-center space-x-2 p-2 bg-muted/50 rounded-lg">
+                            <span className="text-lg">{amenity.icon}</span>
+                            <span className="text-sm font-medium">{amenity.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="flex flex-wrap gap-3">
+                      <Button variant="outline" className="flex items-center bg-transparent">
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Contact Landlord
+                      </Button>
+                      <Button variant="outline" className="flex items-center bg-transparent">
+                        <AlertCircle className="w-4 h-4 mr-2" />
+                        Report Issue
+                      </Button>
+                      <Dialog open={showRoomChangeRequest} onOpenChange={setShowRoomChangeRequest}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="flex items-center bg-transparent">
+                            <Shuffle className="w-4 h-4 mr-2" />
+                            Request Room Change
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Request Room Change</DialogTitle>
+                            <DialogDescription>
+                              Submit a request to change your current room assignment
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Reason for Room Change</Label>
+                              <Select>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a reason" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="roommate-conflict">Roommate Conflicts</SelectItem>
+                                  <SelectItem value="study-environment">Better Study Environment</SelectItem>
+                                  <SelectItem value="noise-issues">Noise Issues</SelectItem>
+                                  <SelectItem value="maintenance-problems">Maintenance Problems</SelectItem>
+                                  <SelectItem value="personal-reasons">Personal Reasons</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Additional Details</Label>
+                              <textarea
+                                className="w-full min-h-[80px] p-3 border border-border rounded-md resize-none"
+                                placeholder="Please provide more details about your request..."
+                              />
+                            </div>
+                            <div className="flex space-x-2">
+                              <DialogClose asChild>
+                                <Button variant="outline" className="flex-1 bg-transparent">
+                                  Cancel
+                                </Button>
+                              </DialogClose>
+                              <Button
+                                className="flex-1"
+                                onClick={() => {
+                                  handleRoommateRequest("room_change", "Better study environment needed")
+                                  setShowRoomChangeRequest(false)
+                                }}
+                              >
+                                Submit Request
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Users className="w-5 h-5 mr-2" />
+                      Your Roommate(s)
+                    </CardTitle>
+                    <CardDescription>Assigned by your landlord</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {roommates.length > 0 ? (
+                        roommates.map((roommate) => (
+                          <div key={roommate.id} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <Avatar>
+                                <AvatarImage src={roommate.avatar} />
+                                <AvatarFallback>{roommate.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">{roommate.name}</p>
+                                <p className="text-sm text-muted-foreground">Room {roommate.roomNumber}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <p>No roommates assigned yet</p>
+                          <p className="text-sm">Your landlord will assign roommates to your room</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </AnimatedTabsContent>
+
+          {/* Rent Tracking Tab */}
+          <AnimatedTabsContent value="rent" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <DollarSign className="w-5 h-5 mr-2" />
+                  Rent Tracking
+                </CardTitle>
+                <CardDescription>View your rent summary and payment history</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground">Monthly Rent</p>
+                    <p className="text-2xl font-semibold">$220</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground">Next Due Date</p>
+                    <p className="text-2xl font-semibold flex items-center gap-2">
+                      <Calendar className="w-5 h-5" /> 01 Sep 2025
+                    </p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <Badge variant="secondary" className="mt-1">Up to date</Badge>
+                  </div>
+                </div>
+
+                {/* Payment History */}
+                <div>
+                  <Label className="mb-2 block">Payment History</Label>
+                  <div className="space-y-2">
+                    {mockRentHistory.map((p) => (
+                      <div key={p.date} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Calendar className="w-4 h-4" />
+                          <div>
+                            <p className="font-medium">{p.month}</p>
+                            <p className="text-sm text-muted-foreground">Ref: {p.date}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="font-semibold">${p.amount}</span>
+                          <Badge variant={p.status === 'Paid' ? 'default' : 'destructive'}>
+                            {p.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-end">
+                  <Button variant="outline" className="flex items-center">
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Request Update from Landlord
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </AnimatedTabsContent>
+
+          {/* Profile Tab */}
+          <AnimatedTabsContent value="profile" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <User className="w-5 h-5 mr-2" />
+                  My Profile
+                </CardTitle>
+                <CardDescription>Manage your personal and academic information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Profile Header */}
+                <div className="flex flex-col items-center space-y-4 pb-6 border-b">
+                  <div className="relative">
+                    <Avatar className="h-32 w-32">
+                      <AvatarImage src="/placeholder-user.jpg" />
+                      <AvatarFallback>{studentProfile?.first_name?.[0] || ''}{studentProfile?.surname?.[0] || ''}</AvatarFallback>
+                    </Avatar>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="absolute -bottom-2 -right-2 rounded-full h-8 w-8"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-2xl font-medium">{studentProfile?.first_name} {studentProfile?.surname}</h3>
+                    <p className="text-muted-foreground">{studentProfile?.email}</p>
+                    <Badge variant="outline" className="mt-2">
+                      Student
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium">Status:</span>
+                      <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
+                    </div>
+                    <div className="h-4 w-px bg-border"></div>
+                    <div>
+                      <span className="font-medium">Member since</span>{' '}
+                      September 2023
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Academic Information Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Academic Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Student ID</Label>
+                        <Input 
+                          name="studentId"
+                          value={formData.studentId}
+                          onChange={handleInputChange}
+                          readOnly={!isEditing}
+                          className={!isEditing ? 'bg-muted/50' : 'border-primary/50 ring-1 ring-primary/20 shadow-sm'}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>University</Label>
+                        {isEditing ? (
+                          <Select 
+                            value={formData.university}
+                            onValueChange={(value) => setFormData(prev => ({...prev, university: value}))}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select university" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {universities.map((univ) => (
+                                <SelectItem key={univ} value={univ}>
+                                  {univ}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="p-2 bg-muted/50 rounded-md">
+                            <p>{formData.university}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Faculty</Label>
+                        <Input 
+                          name="faculty"
+                          value={formData.faculty}
+                          onChange={handleInputChange}
+                          readOnly={!isEditing}
+                          className={!isEditing ? 'bg-muted/50' : 'border-primary/50 ring-1 ring-primary/20 shadow-sm'}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Program</Label>
+                        <Input 
+                          name="program"
+                          value={formData.program}
+                          onChange={handleInputChange}
+                          readOnly={!isEditing}
+                          className={!isEditing ? 'bg-muted/50' : 'border-primary/50 ring-1 ring-primary/20 shadow-sm'}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Year of Study</Label>
+                        {isEditing ? (
+                          <Select 
+                            value={formData.yearOfStudy}
+                            onValueChange={(value) => setFormData(prev => ({...prev, yearOfStudy: value}))}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {yearOfStudyOptions.map((year) => (
+                                <SelectItem key={year} value={year}>
+                                  {year}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="p-2 bg-muted/50 rounded-md">
+                            <p>{formData.yearOfStudy}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Expected Graduation</Label>
+                        <Input 
+                          name="expectedGraduation"
+                          value={formData.expectedGraduation}
+                          onChange={handleInputChange}
+                          readOnly={!isEditing}
+                          className={!isEditing ? 'bg-muted/50' : 'border-primary/50 ring-1 ring-primary/20 shadow-sm'}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Contact Information Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Contact Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Phone Number</Label>
+                        <Input 
+                          name="phoneNumber"
+                          value={formData.phoneNumber}
+                          onChange={handleInputChange}
+                          readOnly={!isEditing}
+                          className={!isEditing ? 'bg-muted/50' : 'border-primary/50 ring-1 ring-primary/20 shadow-sm'}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email</Label>
+                        <Input value={studentProfile?.email || ''} readOnly className="bg-muted/50" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Alternate Email</Label>
+                        <Input 
+                          name="alternateEmail"
+                          value={formData.alternateEmail}
+                          onChange={handleInputChange}
+                          readOnly={!isEditing}
+                          className={!isEditing ? 'bg-muted/50' : 'border-primary/50 ring-1 ring-primary/20 shadow-sm'}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Home Address</Label>
+                        <Input 
+                          name="homeAddress"
+                          value={formData.homeAddress}
+                          onChange={handleInputChange}
+                          readOnly={!isEditing}
+                          className={!isEditing ? 'bg-muted/50' : 'border-primary/50 ring-1 ring-primary/20 shadow-sm'}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Emergency Contact Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Emergency Contact</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Full Name</Label>
+                        {isEditing ? (
+                          <Input 
+                            name="name"
+                            value={formData.emergencyContact.name}
+                            onChange={handleEmergencyContactChange}
+                            className="border-primary/50 ring-1 ring-primary/20 shadow-sm"
+                          />
+                        ) : (
+                          <div className="p-2 bg-muted/50 rounded-md">
+                            <p>{formData.emergencyContact.name}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Relationship</Label>
+                        {isEditing ? (
+                          <Input 
+                            name="relationship"
+                            value={formData.emergencyContact.relationship}
+                            onChange={handleEmergencyContactChange}
+                            className="border-primary/50 ring-1 ring-primary/20 shadow-sm"
+                          />
+                        ) : (
+                          <div className="p-2 bg-muted/50 rounded-md">
+                            <p>{formData.emergencyContact.relationship}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Phone Number</Label>
+                        {isEditing ? (
+                          <Input 
+                            name="phone"
+                            value={formData.emergencyContact.phone}
+                            onChange={handleEmergencyContactChange}
+                            className="border-primary/50 ring-1 ring-primary/20 shadow-sm"
+                          />
+                        ) : (
+                          <div className="p-2 bg-muted/50 rounded-md">
+                            <p>{formData.emergencyContact.phone}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Action Buttons */}
+                <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center pt-6 mt-6 border-t transition-all ${isEditing ? 'border-primary/20' : ''}`}>
+                  <div className="mb-4 sm:mb-0">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="destructive" 
+                          className="flex items-center gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete Account
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={handleDeleteAccount}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Yes, delete my account
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                  
+                  <div className="flex space-x-2 w-full sm:w-auto">
+                    {isEditing ? (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setIsEditing(false)}
+                          disabled={isSaving}
+                          className="w-full sm:w-auto"
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleSaveChanges}
+                          disabled={isSaving}
+                          className="w-full sm:w-auto"
+                        >
+                          {isSaving ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button 
+                        onClick={() => setIsEditing(true)}
+                        className="flex items-center gap-2 w-full sm:w-auto"
+                      >
+                        <Pencil className="w-4 h-4" />
+                        Edit Profile
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {showSuccess && (
+                  <div className="mt-2 text-right">
+                    <span className="text-sm text-green-600">
+                      Profile updated successfully!
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </AnimatedTabsContent>
+
+          {/* Complaints Tab */}
+          <AnimatedTabsContent value="complaints" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 mr-2 text-destructive" />
+                    My Complaints
+                  </div>
+                  <Button 
+                    size="sm" 
+                    onClick={() => setShowNewComplaint(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Complaint
+                  </Button>
+                </CardTitle>
+                <CardDescription>View and track your submitted complaints</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {showNewComplaint ? (
+                  <Card className="mb-6 border-l-4 border-l-primary">
+                    <CardHeader>
+                      <CardTitle>Submit New Complaint</CardTitle>
+                      <CardDescription>Provide details about your issue</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="complaint-title">Title</Label>
+                        <Input
+                          id="complaint-title"
+                          placeholder="Brief description of the issue"
+                          value={newComplaint.title}
+                          onChange={(e) => setNewComplaint({...newComplaint, title: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="complaint-priority">Priority</Label>
+                        <Select 
+                          value={newComplaint.priority} 
+                          onValueChange={(value) => setNewComplaint({...newComplaint, priority: value as ComplaintPriority})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Low">Low</SelectItem>
+                            <SelectItem value="Medium">Medium</SelectItem>
+                            <SelectItem value="High">High</SelectItem>
+                            <SelectItem value="Urgent">Urgent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="complaint-description">Description</Label>
+                        <Textarea
+                          id="complaint-description"
+                          placeholder="Please provide detailed information about the issue..."
+                          rows={4}
+                          value={newComplaint.description}
+                          onChange={(e) => setNewComplaint({...newComplaint, description: e.target.value})}
+                        />
+                      </div>
+                      <div className="flex justify-end space-x-2 pt-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowNewComplaint(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleSubmitComplaint}
+                          disabled={!newComplaint.title || !newComplaint.description}
+                        >
+                          Submit Complaint
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : null}
+
+                {complaints.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No complaints submitted yet</p>
+                    <Button 
+                      className="mt-4" 
+                      onClick={() => setShowNewComplaint(true)}
+                    >
+                      Submit Your First Complaint
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {complaints.map((complaint) => (
+                      <Card key={complaint.id} className="overflow-hidden">
+                        <div className="flex flex-col md:flex-row">
+                          <div className="p-6 flex-1">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="font-medium">{complaint.title}</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  Submitted on {complaint.date}
+                                </p>
+                              </div>
+                              <Badge 
+                                variant={
+                                  complaint.status === 'Resolved' ? 'default' : 
+                                  complaint.priority === 'High' || complaint.priority === 'Urgent' ? 'destructive' : 'secondary'
+                                }
+                              >
+                                {complaint.status}
+                              </Badge>
+                            </div>
+                            <p className="mt-3 text-sm">{complaint.description}</p>
+                            
+                            <div className="mt-4 pt-4 border-t">
+                              <h4 className="text-sm font-medium mb-2">Updates</h4>
+                              <div className="space-y-3">
+                                {complaint.updates.map((update, index) => (
+                                  <div key={index} className="flex items-start gap-3">
+                                    <div className="flex-shrink-0 mt-1">
+                                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5" />
+                                    </div>
+                                    <div>
+                                      <p className="text-sm">{update.message}</p>
+                                      <p className="text-xs text-muted-foreground mt-1">{update.date}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-muted/50 p-4 md:w-48 flex-shrink-0 border-t md:border-t-0 md:border-l">
+                            <div className="space-y-2">
+                              <div>
+                                <p className="text-xs text-muted-foreground">Priority</p>
+                                <p className="font-medium">{complaint.priority}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Status</p>
+                                <p className="font-medium">{complaint.status}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Last Updated</p>
+                                <p className="font-medium">
+                                  {complaint.updates[complaint.updates.length - 1].date}
+                                </p>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full mt-4"
+                              onClick={() => {
+                                // In a real app, this would open a modal to add an update
+                                const updatedComplaints = complaints.map(c => 
+                                  c.id === complaint.id 
+                                    ? {
+                                        ...c,
+                                        updates: [
+                                          ...c.updates,
+                                          {
+                                            date: "2025-08-02",
+                                            message: "You followed up on this complaint.",
+                                            status: c.status
+                                          }
+                                        ]
+                                      }
+                                    : c
+                                );
+                                setComplaints(updatedComplaints);
+                              }}
+                            >
+                              Follow Up
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </AnimatedTabsContent>
+        </AnimatedTabs>
+      </div>
+      
+      <RentalRequestDialog
+        isOpen={isRequestDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsRequestDialogOpen(false);
+            setSelectedProperty(null);
+          } else if (selectedProperty) {
+            setIsRequestDialogOpen(true);
+          }
+        }}
+        propertyTitle={selectedProperty?.title || 'this property'}
+      />
+    </div>
+  )
+}
+

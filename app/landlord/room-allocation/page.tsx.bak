@@ -1,0 +1,918 @@
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+
+// UI Components
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
+  Users,
+  ArrowLeft,
+  Grid3X3,
+  List as ListIcon,
+  Search,
+  Save,
+  Download,
+  UserPlus,
+  UserMinus,
+  Building,
+  Bed,
+  Clock,
+  CheckCircle2,
+  Info,
+  Loader2,
+} from "lucide-react"
+
+// Types
+type RoomStatus = 'available' | 'occupied' | 'partially_occupied' | 'maintenance'
+
+interface Tenant {
+  id: number
+  name: string
+  email: string
+  profileImage: string
+  moveInDate: string
+  university: string
+  yearOfStudy: string
+}
+
+interface Room {
+  id: number
+  propertyId: number
+  propertyName: string
+  roomNumber: string
+  floor: number
+  roomType: string
+  rent: number
+  status: RoomStatus
+  maxOccupancy: number
+  currentOccupancy: number
+  tenant: Tenant | null
+  amenities: string[]
+  position: { x: number; y: number }
+}
+
+interface Student {
+  id: number
+  name: string
+  email: string
+  university: string
+  yearOfStudy: string
+  profileImage: string
+  preferences: {
+    roomType: string
+    maxRent: number
+    preferredFloor: number
+  }
+}
+
+interface Property {
+  id: number
+  title: string
+  location: string
+  floors: number
+  totalRooms: number
+  occupiedRooms: number
+  availableRooms: number
+}
+
+interface AllocationHistory {
+  id: number
+  action: string
+  studentName: string
+  roomNumber?: string
+  propertyName: string
+  date: string
+  performedBy: string
+  fromRoom?: string
+  toRoom?: string
+}
+
+// Mock data
+const mockProperties: Property[] = [
+  {
+    id: 1,
+    title: "Modern Student Apartment",
+    location: "Rondebosch, Cape Town",
+    floors: 3,
+    totalRooms: 12,
+    occupiedRooms: 8,
+    availableRooms: 4,
+  },
+  {
+    id: 2,
+    title: "Cozy Studio Complex",
+    location: "Observatory, Cape Town",
+    floors: 2,
+    totalRooms: 8,
+    occupiedRooms: 6,
+    availableRooms: 2,
+  },
+];
+
+const mockRooms: Room[] = [
+  {
+    id: 1,
+    propertyId: 1,
+    propertyName: "Modern Student Apartment",
+    roomNumber: "101",
+    floor: 1,
+    roomType: "Single Room with En-suite",
+    rent: 4500,
+    status: "occupied",
+    maxOccupancy: 1,
+    currentOccupancy: 1,
+    tenant: {
+      id: 1,
+      name: "Alex Johnson",
+      email: "alex.johnson@uct.ac.za",
+      profileImage: "/placeholder.svg?key=tenant1",
+      moveInDate: "2024-09-01",
+      university: "University of Cape Town",
+      yearOfStudy: "3rd Year",
+    },
+    amenities: ["Private Bathroom", "Study Desk", "Wardrobe", "WiFi"],
+    position: { x: 50, y: 100 },
+  },
+  {
+    id: 2,
+    propertyId: 1,
+    propertyName: "Modern Student Apartment",
+    roomNumber: "102",
+    floor: 1,
+    roomType: "Single Room with En-suite",
+    rent: 4500,
+    status: "available",
+    maxOccupancy: 1,
+    currentOccupancy: 0,
+    tenant: null,
+    amenities: ["Private Bathroom", "Study Desk", "Wardrobe", "WiFi"],
+    position: { x: 200, y: 100 },
+  },
+  {
+    id: 3,
+    propertyId: 1,
+    propertyName: "Modern Student Apartment",
+    roomNumber: "103",
+    floor: 1,
+    roomType: "Shared Room",
+    rent: 3200,
+    status: "partially_occupied",
+    maxOccupancy: 2,
+    currentOccupancy: 1,
+    tenant: {
+      id: 2,
+      name: "Sarah Williams",
+      email: "sarah.williams@uct.ac.za",
+      profileImage: "/placeholder.svg?key=tenant2",
+      moveInDate: "2024-10-15",
+      university: "University of Cape Town",
+      yearOfStudy: "2nd Year",
+    },
+    amenities: ["Shared Bathroom", "Study Desk", "Wardrobe", "WiFi"],
+    position: { x: 350, y: 100 },
+  },
+  {
+    id: 4,
+    propertyId: 1,
+    propertyName: "Modern Student Apartment",
+    roomNumber: "201",
+    floor: 2,
+    roomType: "Single Room with En-suite",
+    rent: 4800,
+    status: "maintenance",
+    maxOccupancy: 1,
+    currentOccupancy: 0,
+    tenant: null,
+    amenities: ["Private Bathroom", "Study Desk", "Wardrobe", "WiFi"],
+    position: { x: 50, y: 250 },
+  },
+]
+
+const mockAvailableStudents = [
+  {
+    id: 3,
+    name: "Emma Thompson",
+    email: "emma.thompson@uct.ac.za",
+    university: "University of Cape Town",
+    yearOfStudy: "2nd Year",
+    profileImage: "/placeholder.svg?key=student1",
+    preferences: {
+      roomType: "Single Room",
+      maxRent: 5000,
+      preferredFloor: 1,
+    },
+  },
+  {
+    id: 4,
+    name: "Michael Chen",
+    email: "michael.chen@uct.ac.za",
+    university: "University of Cape Town",
+    yearOfStudy: "3rd Year",
+    profileImage: "/placeholder.svg?key=student2",
+    preferences: {
+      roomType: "Shared Room",
+      maxRent: 3500,
+      preferredFloor: 2,
+    },
+  },
+  {
+    id: 5,
+    name: "Lisa Rodriguez",
+    email: "lisa.rodriguez@uct.ac.za",
+    university: "University of Cape Town",
+    yearOfStudy: "1st Year",
+    profileImage: "/placeholder.svg?key=student3",
+    preferences: {
+      roomType: "Single Room",
+      maxRent: 4500,
+      preferredFloor: 1,
+    },
+  },
+]
+
+const mockAllocationHistory = [
+  {
+    id: 1,
+    action: "assigned",
+    studentName: "Alex Johnson",
+    roomNumber: "101",
+    propertyName: "Modern Student Apartment",
+    date: "2024-09-01",
+    performedBy: "John Smith",
+  },
+  {
+    id: 2,
+    action: "moved",
+    studentName: "Sarah Williams",
+    fromRoom: "102",
+    toRoom: "103",
+    propertyName: "Modern Student Apartment",
+    date: "2024-10-15",
+    performedBy: "John Smith",
+  },
+]
+
+
+  const selectedPropertyData = mockProperties.find((p) => p.id.toString() === selectedProperty)
+  const filteredRooms = rooms.filter((room) => {
+    const matchesProperty = room.propertyId.toString() === selectedProperty
+    const matchesFloor = selectedFloor === "all" || room.floor.toString() === selectedFloor
+    const matchesSearch =
+      room.roomNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      room.tenant?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      room.roomType.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesProperty && matchesFloor && matchesSearch
+  })
+
+  const handleDragStart = (student: any) => {
+    setDraggedStudent(student)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleDrop = (e: React.DragEvent, roomId: number) => {
+    e.preventDefault()
+    if (!draggedStudent) return
+
+    const room = rooms.find((r) => r.id === roomId)
+    if (!room || room.status === "maintenance" || room.currentOccupancy >= room.maxOccupancy) {
+      alert("Cannot assign student to this room")
+      return
+    }
+
+    assignStudentToRoom(roomId, draggedStudent.id)
+    setDraggedStudent(null)
+  }
+
+  const assignStudentToRoom = (roomId: number, studentId: number) => {
+    const student = availableStudents.find((s) => s.id === studentId)
+    const room = rooms.find((r) => r.id === roomId)
+    if (!student || !room) return
+
+    // Update room with new tenant
+    setRooms(
+      rooms.map((r) =>
+        r.id === roomId
+          ? {
+              ...r,
+              status: r.currentOccupancy + 1 >= r.maxOccupancy ? "occupied" : "partially_occupied",
+              tenant: r.tenant
+                ? r.tenant
+                : {
+                    id: student.id,
+                    name: student.name,
+                    email: student.email,
+                    profileImage: student.profileImage,
+                    moveInDate: new Date().toISOString().split("T")[0],
+                    university: student.university,
+                    yearOfStudy: student.yearOfStudy,
+                  },
+              currentOccupancy: r.currentOccupancy + 1,
+            }
+          : r,
+      ),
+    )
+
+    // Remove student from available list
+    setAvailableStudents(availableStudents.filter((s) => s.id !== studentId))
+
+    // Add to allocation history
+    const newHistoryEntry = {
+      id: Date.now(),
+      action: "assigned",
+      studentName: student.name,
+      roomNumber: room.roomNumber,
+      propertyName: room.propertyName,
+      date: new Date().toISOString().split("T")[0],
+      performedBy: "John Smith",
+    }
+    setAllocationHistory([newHistoryEntry, ...allocationHistory])
+
+    alert(`${student.name} has been assigned to room ${room.roomNumber}`)
+  }
+
+  const removeStudentFromRoom = (roomId: number) => {
+    const room = rooms.find((r) => r.id === roomId)
+    if (!room?.tenant) return
+
+    // Add student back to available list
+    const studentToAdd = {
+      id: room.tenant.id,
+      name: room.tenant.name,
+      email: room.tenant.email,
+      university: room.tenant.university,
+      yearOfStudy: room.tenant.yearOfStudy,
+      profileImage: room.tenant.profileImage,
+      preferences: {
+        roomType: room.roomType,
+        maxRent: room.rent,
+        preferredFloor: room.floor,
+      },
+    }
+    setAvailableStudents([...availableStudents, studentToAdd])
+
+    // Update room
+    setRooms(
+      rooms.map((r) =>
+        r.id === roomId
+          ? {
+              ...r,
+              status: "available",
+              tenant: null,
+              currentOccupancy: Math.max(0, r.currentOccupancy - 1),
+            }
+          : r,
+      ),
+    )
+
+    // Add to allocation history
+    const newHistoryEntry = {
+      id: Date.now(),
+      action: "removed",
+      studentName: room.tenant.name,
+      roomNumber: room.roomNumber,
+      propertyName: room.propertyName,
+      date: new Date().toISOString().split("T")[0],
+      performedBy: "John Smith",
+    }
+    setAllocationHistory([newHistoryEntry, ...allocationHistory])
+
+    alert(`${room.tenant.name} has been removed from room ${room.roomNumber}`)
+  }
+
+  const swapStudents = (roomId1: number, roomId2: number) => {
+    const room1 = rooms.find((r) => r.id === roomId1)
+    const room2 = rooms.find((r) => r.id === roomId2)
+    if (!room1 || !room2 || !room1.tenant || !room2.tenant) return
+
+    setRooms(
+      rooms.map((r) => {
+        if (r.id === roomId1) {
+          return { ...r, tenant: room2.tenant }
+        } else if (r.id === roomId2) {
+          return { ...r, tenant: room1.tenant }
+        }
+        return r
+      }),
+    )
+
+    // Add to allocation history
+    const newHistoryEntry = {
+      id: Date.now(),
+      action: "swapped",
+      studentName: `${room1.tenant.name} ↔ ${room2.tenant.name}`,
+      fromRoom: room1.roomNumber,
+      toRoom: room2.roomNumber,
+      propertyName: room1.propertyName,
+      date: new Date().toISOString().split("T")[0],
+      performedBy: "John Smith",
+    }
+    setAllocationHistory([newHistoryEntry, ...allocationHistory])
+
+    alert(`Students have been swapped between rooms ${room1.roomNumber} and ${room2.roomNumber}`)
+  }
+
+  const bulkAssignByPreferences = () => {
+    let assignedCount = 0
+
+    availableStudents.forEach((student) => {
+      const suitableRoom = filteredRooms.find(
+        (room) =>
+          room.status === "available" &&
+          room.rent <= student.preferences.maxRent &&
+          (student.preferences.preferredFloor === room.floor || student.preferences.preferredFloor === 0) &&
+          room.roomType.toLowerCase().includes(student.preferences.roomType.toLowerCase()),
+      )
+
+      if (suitableRoom) {
+        assignStudentToRoom(suitableRoom.id, student.id)
+        assignedCount++
+      }
+    })
+
+    alert(`${assignedCount} students have been automatically assigned based on their preferences`)
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/landlord/dashboard">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Dashboard
+                </Link>
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">Room Allocation Interface</h1>
+                <p className="text-sm text-muted-foreground">Advanced room and tenant management</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={bulkAssignByPreferences}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Auto Assign
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+              <Button variant="outline" size="sm">
+                <Save className="w-4 h-4 mr-2" />
+                Save Layout
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar - Available Students */}
+          <div className="lg:col-span-1">
+            <Card className="sticky top-24">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Users className="w-5 h-5 mr-2" />
+                  Available Students
+                </CardTitle>
+                <CardDescription>Drag students to assign them to rooms</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 max-h-96 overflow-y-auto">
+                {availableStudents.map((student) => (
+                  <div
+                    key={student.id}
+                    draggable
+                    onDragStart={() => handleDragStart(student)}
+                    className="p-3 border rounded-lg cursor-move hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={student.profileImage || "/placeholder.svg"} />
+                        <AvatarFallback>
+                          {student.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{student.name}</p>
+                        <p className="text-xs text-muted-foreground">{student.yearOfStudy}</p>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            Max R{student.preferences.maxRent}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {availableStudents.length === 0 && (
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No available students</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content - Room Allocation */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Controls */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Label>Property:</Label>
+                    <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockProperties.map((property) => (
+                          <SelectItem key={property.id} value={property.id.toString()}>
+                            {property.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Label>Floor:</Label>
+                    <Select value={selectedFloor} onValueChange={setSelectedFloor}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Floors</SelectItem>
+                        {Array.from({ length: selectedPropertyData?.floors || 3 }, (_, i) => (
+                          <SelectItem key={i + 1} value={(i + 1).toString()}>
+                            Floor {i + 1}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Search className="w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search rooms or tenants..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-48"
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-1 ml-auto">
+                    <Button
+                      variant={viewMode === "grid" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setViewMode("grid")}
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === "list" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setViewMode("list")}
+                    >
+                      <List className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Property Stats */}
+            {selectedPropertyData && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Rooms</p>
+                        <p className="text-2xl font-bold">{selectedPropertyData.totalRooms}</p>
+                      </div>
+                      <Building className="w-8 h-8 text-primary" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Occupied</p>
+                        <p className="text-2xl font-bold text-green-600">{selectedPropertyData.occupiedRooms}</p>
+                      </div>
+                      <CheckCircle2 className="w-8 h-8 text-green-600" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Available</p>
+                        <p className="text-2xl font-bold text-blue-600">{selectedPropertyData.availableRooms}</p>
+                      </div>
+                      <Bed className="w-8 h-8 text-blue-600" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Occupancy Rate</p>
+                        <p className="text-2xl font-bold">
+                          {Math.round((selectedPropertyData.occupiedRooms / selectedPropertyData.totalRooms) * 100)}%
+                        </p>
+                      </div>
+                      <Info className="w-8 h-8 text-primary" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Room Grid/List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Room Layout</CardTitle>
+                <CardDescription>Drag students from the sidebar to assign them to rooms</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {viewMode === "grid" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredRooms.map((room) => (
+                      <div
+                        key={room.id}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, room.id)}
+                        className={`p-4 border-2 border-dashed rounded-lg transition-colors ${
+                          room.status === "available"
+                            ? "border-green-300 bg-green-50 hover:border-green-400"
+                            : room.status === "occupied"
+                              ? "border-blue-300 bg-blue-50"
+                              : room.status === "partially_occupied"
+                                ? "border-yellow-300 bg-yellow-50"
+                                : "border-red-300 bg-red-50"
+                        }`}
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-semibold">Room {room.roomNumber}</h3>
+                              <p className="text-sm text-muted-foreground">Floor {room.floor}</p>
+                            </div>
+                            <Badge
+                              variant={
+                                room.status === "occupied"
+                                  ? "default"
+                                  : room.status === "available"
+                                    ? "secondary"
+                                    : room.status === "partially_occupied"
+                                      ? "outline"
+                                      : "destructive"
+                              }
+                            >
+                              {room.status.replace("_", " ")}
+                            </Badge>
+                          </div>
+
+                          <div className="text-sm space-y-1">
+                            <p>
+                              <span className="text-muted-foreground">Type:</span> {room.roomType}
+                            </p>
+                            <p>
+                              <span className="text-muted-foreground">Rent:</span> R{room.rent}/month
+                            </p>
+                            <p>
+                              <span className="text-muted-foreground">Occupancy:</span> {room.currentOccupancy}/
+                              {room.maxOccupancy}
+                            </p>
+                          </div>
+
+                          {room.tenant && (
+                            <div className="p-2 bg-background rounded border">
+                              <div className="flex items-center space-x-2">
+                                <Avatar className="w-6 h-6">
+                                  <AvatarImage src={room.tenant.profileImage || "/placeholder.svg"} />
+                                  <AvatarFallback className="text-xs">
+                                    {room.tenant.name
+                                      .split(" ")
+                                      .map((n) => n[0])
+                                      .join("")}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{room.tenant.name}</p>
+                                  <p className="text-xs text-muted-foreground">Since {room.tenant.moveInDate}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex space-x-1">
+                            {room.tenant && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm" className="flex-1 bg-transparent">
+                                    <UserMinus className="w-3 h-3 mr-1" />
+                                    Remove
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remove Tenant</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Remove {room.tenant.name} from room {room.roomNumber}?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => removeStudentFromRoom(room.id)}>
+                                      Remove
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+
+                            {room.status === "available" && (
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button size="sm" className="flex-1">
+                                    <UserPlus className="w-3 h-3 mr-1" />
+                                    Assign
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Assign Student to Room {room.roomNumber}</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-3">
+                                    {availableStudents.map((student) => (
+                                      <div
+                                        key={student.id}
+                                        className="flex items-center justify-between p-3 border rounded"
+                                      >
+                                        <div className="flex items-center space-x-3">
+                                          <Avatar>
+                                            <AvatarImage src={student.profileImage || "/placeholder.svg"} />
+                                            <AvatarFallback>
+                                              {student.name
+                                                .split(" ")
+                                                .map((n) => n[0])
+                                                .join("")}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <div>
+                                            <p className="font-medium">{student.name}</p>
+                                            <p className="text-sm text-muted-foreground">{student.yearOfStudy}</p>
+                                          </div>
+                                        </div>
+                                        <Button size="sm" onClick={() => assignStudentToRoom(room.id, student.id)}>
+                                          Assign
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredRooms.map((room) => (
+                      <div key={room.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div>
+                            <h3 className="font-semibold">Room {room.roomNumber}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {room.roomType} • Floor {room.floor} • R{room.rent}/month
+                            </p>
+                          </div>
+                          {room.tenant && (
+                            <div className="flex items-center space-x-2">
+                              <Avatar className="w-8 h-8">
+                                <AvatarImage src={room.tenant.profileImage || "/placeholder.svg"} />
+                                <AvatarFallback>
+                                  {room.tenant.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="text-sm font-medium">{room.tenant.name}</p>
+                                <p className="text-xs text-muted-foreground">Since {room.tenant.moveInDate}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge
+                            variant={
+                              room.status === "occupied"
+                                ? "default"
+                                : room.status === "available"
+                                  ? "secondary"
+                                  : "destructive"
+                            }
+                          >
+                            {room.status}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">
+                            {room.currentOccupancy}/{room.maxOccupancy}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Allocation History */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Clock className="w-5 h-5 mr-2" />
+                  Recent Allocation History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {allocationHistory.slice(0, 5).map((entry) => (
+                    <div key={entry.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            entry.action === "assigned"
+                              ? "bg-green-500"
+                              : entry.action === "removed"
+                                ? "bg-red-500"
+                                : entry.action === "moved"
+                                  ? "bg-blue-500"
+                                  : "bg-yellow-500"
+                          }`}
+                        />
+                        <div>
+                          <p className="text-sm">
+                            <span className="font-medium">{entry.studentName}</span>
+                            {entry.action === "assigned" && ` was assigned to room ${entry.roomNumber}`}
+                            {entry.action === "removed" && ` was removed from room ${entry.roomNumber}`}
+                            {entry.action === "moved" && ` was moved from ${entry.fromRoom} to ${entry.toRoom}`}
+                            {entry.action === "swapped" && ` rooms were swapped`}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {entry.date} • by {entry.performedBy}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

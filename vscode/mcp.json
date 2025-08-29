@@ -1,0 +1,8 @@
+{
+  "servers": [
+    {
+      "name": "supabase",
+      "url": "https://cjpurmvvdvhicopkkfoy.supabase.co"
+    }
+  ]
+}
