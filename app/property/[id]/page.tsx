@@ -244,7 +244,7 @@ export default function PropertyDetailsPage() {
       if (userError || !user) {
         throw new Error('You must be logged in to submit a rental request')
       }
-MAkaye
+
       // Extract just the message part before "Profile:" or take the whole message
       const messageContent = data.message.split('Profile:')[0].trim() || "I'm interested in this property.";
 
